@@ -34,3 +34,4 @@
 # generated output
 obj_dir/
 out/
+build/
