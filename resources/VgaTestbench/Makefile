@@ -14,6 +14,7 @@ PACK = icepack
 PROGRAMMER = iceprog
 VERILOG_SIMULATOR = iverilog
 WAVEFORM_VIEWER = gtkwave
+VERILOG_CPP_COMPILER = verilator
 
 NAME = $(PROJECT_NAME)
 OUT = $(BUILD_DIR)
@@ -57,6 +58,11 @@ verilog_sim: $(OUT)/$(NAME).out
 	@echo simulating verilog testbench...
 	@echo
 	(cd $(OUT) && ./$(NAME).out && $(WAVEFORM_VIEWER) dump.vcd)
+
+verilator:
+	@echo compiling cpp models...
+	@echo
+	$(VERILOG_CPP_COMPILER) -Wall -Wno-DECLFILENAME -Wno-fatal --top $(NAME)_TLM -cc --build $(SOURCES)
 
 clean:
 	@echo Cleaning up...

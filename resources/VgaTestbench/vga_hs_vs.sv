@@ -81,7 +81,7 @@ module VGA_HS_VS
         // compute pixel coordinates
         if ((r_hCnt >= (H_SYNC + H_BACK_PORCH)) && (r_hCnt < (H_TOTAL - H_FRONT_PORCH)))
         begin
-            r_px <= 10'(r_hCnt - H_SYNC - H_BACK_PORCH);
+            r_px <= r_hCnt - 10'(H_SYNC) - 10'(H_BACK_PORCH);
             r_hActive <= 1'b1;
         end
         else
@@ -92,7 +92,7 @@ module VGA_HS_VS
 
         if ((r_vCnt >= (V_SYNC + V_BACK_PORCH)) && (r_vCnt < (V_TOTAL - V_FRONT_PORCH)))
         begin
-            r_py <= 10'(r_vCnt - V_SYNC - V_BACK_PORCH);
+            r_py <= r_vCnt - 10'(V_SYNC) - 10'(V_BACK_PORCH);
             r_vActive <= 1'b1;
         end
         else

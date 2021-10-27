@@ -35,3 +35,4 @@
 obj_dir/
 out/
 build/
+.project

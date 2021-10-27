@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdlib>
 #include <cstdint>
 
@@ -11,9 +13,9 @@ class CVgaMonitor
 
         // methods
         CVgaMonitor() = default;
-        bool Setup(size_t width, size_t height, size_t bitsPerColor);
-        bool Setup(){ return Setup(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_COLOR_RESOLUTION); };
+        bool setup(size_t width, size_t height, size_t bitsPerColor);
+        bool setup(){ return setup(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_COLOR_RESOLUTION); };
 
-        void Evaluate(bool hSync, bool vSync, uint16_t red, uint16_t green, uint16_t blue);
+        void eval(bool hSync, bool vSync, uint16_t red, uint16_t green, uint16_t blue);
 };
 
