@@ -25,7 +25,7 @@ module VGA_TLM
     );
 
     // instantiate vga sync generator
-    wire w_hs, w_vs;
+    wire w_hs, w_vs, w_activeArea;
     wire [9:0] w_px;
     wire [9:0] w_py;
 
@@ -35,7 +35,7 @@ module VGA_TLM
         .i_reset(w_reset),
         .o_hs(w_hs),
         .o_vs(w_vs),
-        .o_activeArea(),
+        .o_activeArea(w_activeArea),
         .o_px(w_px),
         .o_py(w_py)
     );
@@ -54,6 +54,7 @@ module VGA_TLM
         .i_reset(w_reset),
         .i_px(w_px),
         .i_py(w_py),
+        .i_activeArea(w_activeArea),
         .o_red(w_red),
         .o_green(w_green),
         .o_blue(w_blue)

@@ -8,23 +8,26 @@ module VGA_PSYCHEDELIC_PATTERN
 (
     input i_clk,
     input i_reset,
+    /* verilator lint_off UNUSED */
     input [9:0] i_px,
     input [9:0] i_py,
+    /* verilator lint_on UNUSED */
+    input i_activeArea,
     output [2:0] o_red,
     output [2:0] o_green,
     output [2:0] o_blue
 );
     // local variables
-    reg [15:0] r_millisec = 0;
-    reg [15:0] r_cnt = 0;
+    bit [15:0] r_millisec = 0;
+    bit [15:0] r_cnt = 0;
 
     // outputs
-    reg [2:0] r_red = 0;
-    reg [2:0] r_green = 0;
-    reg [2:0] r_blue = 0;
+    bit [2:0] r_red = 0;
+    bit [2:0] r_green = 0;
+    bit [2:0] r_blue = 0;
     
 
-    always @(posedge i_clk, posedge i_reset)
+    always_ff @(posedge i_clk, posedge i_reset)
     if (i_reset == 1'b1)
     begin
         r_millisec <= 0;
@@ -45,17 +48,14 @@ module VGA_PSYCHEDELIC_PATTERN
             r_millisec <= r_millisec + 1;
         end
 
-        //r_red <= i_px[4:2];
         r_red <= i_px[4:2] ^ r_millisec[10:8];
-        //r_green <= i_py[4:2];
         r_green <= i_py[4:2] + r_millisec[7:5];
-        //r_blue <= i_py[8:6];
         r_blue <= i_py[8:6] + r_millisec[11:9];
     end
 
-    assign o_red = r_red; 
-    assign o_green = r_green; 
-    assign o_blue = r_blue; 
+    assign o_red = i_activeArea ? r_red : '0; 
+    assign o_green = i_activeArea ? r_green : '0; 
+    assign o_blue = i_activeArea ? r_blue : '0; 
 
 endmodule
 
@@ -65,17 +65,18 @@ module VGA_RGB_PATTERN
     input i_reset,
     input [9:0] i_px,
     input [9:0] i_py,
+    input i_activeArea,
     output [2:0] o_red,
     output [2:0] o_green,
     output [2:0] o_blue
 );
     // outputs
-    reg [2:0] r_red = 0;
-    reg [2:0] r_green = 0;
-    reg [2:0] r_blue = 0;
+    bit [2:0] r_red = 0;
+    bit [2:0] r_green = 0;
+    bit [2:0] r_blue = 0;
     
 
-    always @(posedge i_clk, posedge i_reset)
+    always_ff @(posedge i_clk, posedge i_reset)
     if (i_reset == 1'b1)
     begin
         r_red <= 0;
@@ -104,9 +105,9 @@ module VGA_RGB_PATTERN
         end
     end
 
-    assign o_red = r_red; 
-    assign o_green = r_green; 
-    assign o_blue = r_blue; 
+    assign o_red = i_activeArea ? r_red : '0; 
+    assign o_green = i_activeArea ? r_green : '0; 
+    assign o_blue = i_activeArea ? r_blue : '0; 
 
 
 endmodule
@@ -117,17 +118,18 @@ module VGA_CHESS_PATTERN
     input i_reset,
     input [9:0] i_px,
     input [9:0] i_py,
+    input i_activeArea,
     output [2:0] o_red,
     output [2:0] o_green,
     output [2:0] o_blue
 );
     // outputs
-    reg [2:0] r_red = 0;
-    reg [2:0] r_green = 0;
-    reg [2:0] r_blue = 0;
+    bit [2:0] r_red = 0;
+    bit [2:0] r_green = 0;
+    bit [2:0] r_blue = 0;
     
 
-    always @(posedge i_clk, posedge i_reset)
+    always_ff @(posedge i_clk, posedge i_reset)
     if (i_reset == 1'b1)
     begin
         r_red <= 0;
@@ -150,10 +152,9 @@ module VGA_CHESS_PATTERN
         end
     end
 
-    assign o_red = r_red; 
-    assign o_green = r_green; 
-    assign o_blue = r_blue; 
-
+    assign o_red = i_activeArea ? r_red : '0; 
+    assign o_green = i_activeArea ? r_green : '0; 
+    assign o_blue = i_activeArea ? r_blue : '0; 
 
 endmodule
 

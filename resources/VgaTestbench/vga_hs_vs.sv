@@ -22,20 +22,20 @@ module VGA_HS_VS
 );
 
     // local variables
-    reg [10:0] r_hCnt = 0;
-    reg [10:0] r_vCnt = 0;
-    reg r_vCntEnable = 1'b0;
+    bit [9:0] r_hCnt = 0;
+    bit [9:0] r_vCnt = 0;
+    bit r_vCntEnable = 1'b0;
 
     // output registers
-    reg r_hs = 1'b0;
-    reg r_vs = 1'b0;
-    reg r_activeArea = 1'b0;
-    reg r_hActive = 1'b0;
-    reg r_vActive = 1'b0;
-    reg [9:0] r_px = 0;
-    reg [9:0] r_py = 0;
+    bit r_hs = 1'b0;
+    bit r_vs = 1'b0;
+    bit r_activeArea = 1'b0;
+    bit r_hActive = 1'b0;
+    bit r_vActive = 1'b0;
+    bit [9:0] r_px = 0;
+    bit [9:0] r_py = 0;
 
-    always @(posedge i_clk, posedge i_reset)
+    always_ff @(posedge i_clk, posedge i_reset)
     if (i_reset == 1'b1)
     begin
         r_hCnt <= 0;
@@ -81,7 +81,7 @@ module VGA_HS_VS
         // compute pixel coordinates
         if ((r_hCnt >= (H_SYNC + H_BACK_PORCH)) && (r_hCnt < (H_TOTAL - H_FRONT_PORCH)))
         begin
-            r_px <= r_hCnt - H_SYNC - H_BACK_PORCH;
+            r_px <= 10'(r_hCnt - H_SYNC - H_BACK_PORCH);
             r_hActive <= 1'b1;
         end
         else
@@ -92,7 +92,7 @@ module VGA_HS_VS
 
         if ((r_vCnt >= (V_SYNC + V_BACK_PORCH)) && (r_vCnt < (V_TOTAL - V_FRONT_PORCH)))
         begin
-            r_py <= r_vCnt - V_SYNC - V_BACK_PORCH;
+            r_py <= 10'(r_vCnt - V_SYNC - V_BACK_PORCH);
             r_vActive <= 1'b1;
         end
         else
