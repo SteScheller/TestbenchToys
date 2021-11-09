@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <chrono>
 #include <memory>
+#include <vector>
 
 #include <SDL.h>
 
@@ -32,6 +33,8 @@ class CVgaMonitor
         void eval(bool hSync, bool vSync, uint16_t red, uint16_t green, uint16_t blue,
                 std::chrono::nanoseconds elapsed);
 
+        bool hasQuitEvent();
+
     private:
         // types
         enum class State
@@ -40,6 +43,14 @@ class CVgaMonitor
         };
 
         using nanosec = std::chrono::nanoseconds;
+
+        struct Pixel
+        {
+                uint8_t b;
+                uint8_t g;
+                uint8_t r;
+                uint8_t padding;
+        } __attribute__((__packed__));
 
         // methods
         void setupMode_VGA_640x480_60Hz();
@@ -50,12 +61,12 @@ class CVgaMonitor
         State m_state { State::OUT_OF_SYNC };
         nanosec m_t { 0 };
         nanosec m_pixel { 0 };
-        nanosec m_hSync { 0 };
+        nanosec m_hSyncPulse { 0 };
         nanosec m_hBackPorch { 0 };
         nanosec m_hVisibleArea { 0 };
         nanosec m_hFrontPorch { 0 };
         nanosec m_line { 0 };
-        nanosec m_vSync { 0 };
+        nanosec m_vSyncPulse { 0 };
         nanosec m_vBackPorch { 0 };
         nanosec m_vVisibleArea { 0 };
         nanosec m_vFrontPorch { 0 };
@@ -63,6 +74,7 @@ class CVgaMonitor
         size_t m_numPixels { 0 };
         size_t m_winWidth { 0 };
         size_t m_winHeight { 0 };
+        uint8_t m_colorBitOffset { 0 };
         bool m_hSyncLast { false };
         bool m_vSyncLast { false };
 
@@ -72,5 +84,7 @@ class CVgaMonitor
         rendererPtr m_renderer { nullptr, SDL_DestroyRenderer };
         using texturePtr = std::unique_ptr<SDL_Texture, decltype(&SDL_DestroyTexture)>;
         texturePtr m_texture { nullptr, SDL_DestroyTexture };
+
+        std::vector<Pixel> m_buffer;
 };
 
