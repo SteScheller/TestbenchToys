@@ -10,19 +10,19 @@
 
 using namespace std::chrono_literals;
 
-inline uint16_t getRed(const VVGA_top &c)
+inline uint8_t getRed(const VVGA_top &c)
 {
-    return static_cast<uint16_t>((c.o_vgaR2 << 2) | (c.o_vgaR1 << 1) | c.o_vgaR0);
+    return static_cast<uint8_t>((c.o_vgaR2 << 2) | (c.o_vgaR1 << 1) | c.o_vgaR0);
 }
 
-inline uint16_t getGreen(const VVGA_top &c)
+inline uint8_t getGreen(const VVGA_top &c)
 {
-    return static_cast<uint16_t>((c.o_vgaG2 << 2) | (c.o_vgaG1 << 1) | c.o_vgaG0);
+    return static_cast<uint8_t>((c.o_vgaG2 << 2) | (c.o_vgaG1 << 1) | c.o_vgaG0);
 }
 
-inline uint16_t getBlue(const VVGA_top &c)
+inline uint8_t getBlue(const VVGA_top &c)
 {
-    return static_cast<uint16_t>((c.o_vgaB2 << 2) | (c.o_vgaB1 << 1) | c.o_vgaB0);
+    return static_cast<uint8_t>((c.o_vgaB2 << 2) | (c.o_vgaB1 << 1) | c.o_vgaB0);
 }
 
 int main(int argc, char **argv)

@@ -30,7 +30,7 @@ class CVgaMonitor
             return setup(Mode::VGA_640x480_60Hz, ColorDepth::RGB_3BitPerColor);
         }
 
-        void eval(bool hSync, bool vSync, uint16_t red, uint16_t green, uint16_t blue,
+        void eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8_t blue,
                 std::chrono::nanoseconds elapsed);
 
         bool hasQuitEvent();
@@ -59,7 +59,8 @@ class CVgaMonitor
         Mode m_mode { Mode::VGA_640x480_60Hz };
         ColorDepth m_depth { ColorDepth::RGB_3BitPerColor };
         State m_state { State::OUT_OF_SYNC };
-        nanosec m_t { 0 };
+        nanosec m_th { 0 };
+        nanosec m_tv { 0 };
         nanosec m_pixel { 0 };
         nanosec m_hSyncPulse { 0 };
         nanosec m_hBackPorch { 0 };

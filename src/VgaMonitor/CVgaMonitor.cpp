@@ -10,6 +10,11 @@
 
 using namespace std::chrono_literals;
 
+namespace
+{
+    double tolerance { 0.0075 };
+}
+
 bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
 {
     auto ok = true;
@@ -17,7 +22,8 @@ bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
     m_mode = mode;
     m_depth = depth;
 
-    m_t = nanosec { 0 };
+    m_th = nanosec { 0 };
+    m_tv = nanosec { 0 };
     switch (mode)
     {
         case Mode::VGA_640x480_60Hz:
@@ -65,12 +71,6 @@ bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
         std::cerr << "vga monitor texture creation failed: %s\n" << SDL_GetError();
         ok = false;
     }
-    else
-    {
-        std::cout << "texture has alpha: " << SDL_ISPIXELFORMAT_ALPHA(pixelFormat) << std::endl;
-        std::cout << "texture bits per pixel: " << SDL_BITSPERPIXEL(pixelFormat) << std::endl;
-        std::cout << "texture bytes per pixel: " << SDL_BYTESPERPIXEL(pixelFormat) << std::endl;
-    }
 
     return ok;
 }
@@ -92,60 +92,174 @@ void CVgaMonitor::setupMode_VGA_640x480_60Hz()
     m_winHeight = 480;
 }
 
-void CVgaMonitor::eval(bool hSync, bool vSync, uint16_t red, uint16_t green, uint16_t blue,
+void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8_t blue,
         std::chrono::nanoseconds elapsed)
 {
-    std::string errorTxt;
-    bool run = true;
+    static std::string errorTxt;
 
-    m_t += elapsed;
+    m_th += elapsed;
+    m_tv += elapsed;
 
-    while (run)
+    // frame starts on the negative edge of vsync
+    if (m_vSyncLast && !vSync)
     {
-        run = false;
-        switch (m_state)
+        m_tv = 0ns;
+
+        // display last frame
+        SDL_UpdateTexture(m_texture.get(), NULL, m_buffer.data(), m_winWidth * sizeof(Pixel));
+        SDL_RenderClear(m_renderer.get());
+        SDL_RenderCopy(m_renderer.get(), m_texture.get(), NULL, NULL);
+        SDL_RenderPresent(m_renderer.get());
+
+        if (!errorTxt.empty())
         {
-            case State::OUT_OF_SYNC:
-                if (m_vSyncLast && !vSync)
-                {
-                    m_t = 0ns;
-                    m_state = State::VERTICAL_SYNC;
-                }
-                break;
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Debug", errorTxt.c_str(),
+                    m_window.get());
+        }
 
-            case State::VERTICAL_SYNC:
-                if ((m_t >= m_vSyncPulse) && (m_hSyncLast && !hSync))
-                {
-                    m_state = State::HORIZONTAL_SYNC;
-                    run = true;
-                }
-                else if (vSync)
-                {
-                    errorTxt += "vertical synchronization error: sync pulse too short\n";
-                }
-                else if (red || green || blue)
-                {
-                    errorTxt += "vertical blanking error: RGB != 0\n";
-                }
-                break;
+        // delete error text from last frame
+        errorTxt.clear();
+    }
 
-            case State::HORIZONTAL_SYNC:
-                break;
+    {
+        // check vsync signal
+        if ((m_tv * (1.0 + tolerance)) < m_vSyncPulse)
+        {
+            // vsync should be low during blanking
+            if (vSync)
+            {
+                errorTxt += "vertical synchronization error: vsync high during blanking\n";
+            }
 
-            case State::LINE:
-                break;
+            // colors should be off during blanking
+            if (red || green || blue)
+            {
+                errorTxt += "vertical blanking error: RGB != 0 during synchronization\n";
+            }
+        }
+        else if ((m_tv * (1.0 + tolerance)) < (m_vSyncPulse + m_vBackPorch))
+        {
+            // vsync should be high during back porch
+            if (!vSync)
+            {
+                errorTxt += "vertical synchronization error: vsync low during back porch\n";
+            }
 
-            default:
-                assert(false);
-                break;
+            // colors should be off back porch
+            if (red || green || blue)
+            {
+                errorTxt += "vertical blanking error: RGB != 0 during back porch\n";
+            }
+        }
+        else if (((m_tv * (1.0 - tolerance)) > (m_vSyncPulse + m_vBackPorch))
+                && ((m_tv * (1.0 + tolerance)) < (m_vSyncPulse + m_vBackPorch + m_vVisibleArea)))
+        {
+            // vsync should be high in active area
+            if (!vSync)
+            {
+                errorTxt += "vertical synchronization error: vsync low in active area\n";
+            }
+        }
+        else if (((m_tv * (1.0 - tolerance)) > (m_vSyncPulse + m_vBackPorch + m_vVisibleArea))
+                && ((m_tv * (1.0 + tolerance)) < (m_frame - m_vFrontPorch)))
+        {
+            // vsync should be high during front porch
+            if (!vSync)
+            {
+                errorTxt += "vertical synchronization error: vsync low during front porch\n";
+            }
 
+            // colors should be off back porch
+            if (red || green || blue)
+            {
+                errorTxt += "vertical blanking error: RGB != 0 during front porch\n";
+            }
         }
     }
 
-    SDL_UpdateTexture(m_texture.get(), NULL, m_buffer.data(), m_winWidth * sizeof(Pixel));
-    SDL_RenderClear(m_renderer.get());
-    SDL_RenderCopy(m_renderer.get(), m_texture.get(), NULL, NULL);
-    SDL_RenderPresent(m_renderer.get());
+    // line  starts on the negative edge of hsync
+    if (m_hSyncLast && !hSync)
+    {
+        m_th = 0ns;
+    }
+
+    // check hsync signal
+    {
+        if ((m_th * (1.0 + tolerance)) < m_hSyncPulse)
+        {
+            // hsync should be low during blanking
+            if (hSync)
+            {
+                errorTxt += "horizontal synchronization error: hsync high during blanking\n";
+            }
+
+            // colors should be off during blanking
+            if (red || green || blue)
+            {
+                errorTxt += "horizontal blanking error: RGB != 0 during synchronization\n";
+            }
+        }
+        else if ((m_th * (1.0 + tolerance)) < (m_hSyncPulse + m_hBackPorch))
+        {
+            // hsync should be high during back porch
+            if (!hSync)
+            {
+                errorTxt += "horizontal synchronization error: hsync low during back porch\n";
+            }
+
+            // colors should be off back porch
+            if (red || green || blue)
+            {
+                errorTxt += "horizontal blanking error: RGB != 0 during back porch\n";
+            }
+        }
+        else if (((m_th * (1.0 - tolerance)) > (m_hSyncPulse + m_hBackPorch))
+                && ((m_th * (1.0 + tolerance)) < (m_hSyncPulse + m_hBackPorch + m_hVisibleArea)))
+        {
+            // hsync should be high in active area
+            if (!hSync)
+            {
+                errorTxt += "horizontal synchronization error: hsync low in active area\n";
+            }
+        }
+        else if (((m_th * (1.0 - tolerance)) > (m_hSyncPulse + m_hBackPorch + m_hVisibleArea))
+                && ((m_th * (1.0 + tolerance)) < (m_frame - m_hFrontPorch)))
+        {
+            // hsync should be high during front porch
+            if (!hSync)
+            {
+                errorTxt += "horizontal synchronization error: hsync low during front porch\n";
+            }
+
+            // colors should be off back porch
+            if (red || green || blue)
+            {
+                errorTxt += "horizontal blanking error: RGB != 0 during front porch\n";
+            }
+        }
+    }
+
+    // color the current pixel
+    {
+        size_t x = m_winWidth;
+        size_t y = m_winHeight;
+
+        nanosec xt = m_th - m_hSyncPulse - m_hBackPorch;
+        nanosec yt = m_tv - m_vSyncPulse - m_vBackPorch;
+        if ((xt >= 0ns) && (yt >= 0ns))
+        {
+            x = floor(xt / m_pixel);
+            y = floor(yt / m_pixel);
+        }
+
+        if ((x < m_winWidth) && (y < m_winHeight))
+        {
+            auto &pixel = m_buffer[y * m_winWidth + x];
+            pixel.r = red << m_colorBitOffset;
+            pixel.g = green << m_colorBitOffset;
+            pixel.b = blue << m_colorBitOffset;
+        }
+    }
 
     m_hSyncLast = hSync;
     m_vSyncLast = vSync;
