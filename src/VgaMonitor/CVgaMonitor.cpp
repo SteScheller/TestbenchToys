@@ -128,13 +128,13 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // vsync should be low during blanking
             if (vSync)
             {
-                errorTxt += "vertical synchronization error: vsync high during blanking\n";
+                //errorTxt += "vertical synchronization error: vsync high during blanking\n";
             }
 
             // colors should be off during blanking
             if (red || green || blue)
             {
-                errorTxt += "vertical blanking error: RGB != 0 during synchronization\n";
+                //errorTxt += "vertical blanking error: RGB != 0 during synchronization\n";
             }
         }
         else if ((m_tv * (1.0 + tolerance)) < (m_vSyncPulse + m_vBackPorch))
@@ -142,13 +142,13 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // vsync should be high during back porch
             if (!vSync)
             {
-                errorTxt += "vertical synchronization error: vsync low during back porch\n";
+                //errorTxt += "vertical synchronization error: vsync low during back porch\n";
             }
 
             // colors should be off back porch
             if (red || green || blue)
             {
-                errorTxt += "vertical blanking error: RGB != 0 during back porch\n";
+                //errorTxt += "vertical blanking error: RGB != 0 during back porch\n";
             }
         }
         else if (((m_tv * (1.0 - tolerance)) > (m_vSyncPulse + m_vBackPorch))
@@ -157,7 +157,7 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // vsync should be high in active area
             if (!vSync)
             {
-                errorTxt += "vertical synchronization error: vsync low in active area\n";
+                //errorTxt += "vertical synchronization error: vsync low in active area\n";
             }
         }
         else if (((m_tv * (1.0 - tolerance)) > (m_vSyncPulse + m_vBackPorch + m_vVisibleArea))
@@ -166,13 +166,13 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // vsync should be high during front porch
             if (!vSync)
             {
-                errorTxt += "vertical synchronization error: vsync low during front porch\n";
+                //errorTxt += "vertical synchronization error: vsync low during front porch\n";
             }
 
             // colors should be off back porch
             if (red || green || blue)
             {
-                errorTxt += "vertical blanking error: RGB != 0 during front porch\n";
+                //errorTxt += "vertical blanking error: RGB != 0 during front porch\n";
             }
         }
     }
@@ -190,13 +190,13 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // hsync should be low during blanking
             if (hSync)
             {
-                errorTxt += "horizontal synchronization error: hsync high during blanking\n";
+                //errorTxt += "horizontal synchronization error: hsync high during blanking\n";
             }
 
             // colors should be off during blanking
             if (red || green || blue)
             {
-                errorTxt += "horizontal blanking error: RGB != 0 during synchronization\n";
+                //errorTxt += "horizontal blanking error: RGB != 0 during synchronization\n";
             }
         }
         else if ((m_th * (1.0 + tolerance)) < (m_hSyncPulse + m_hBackPorch))
@@ -204,13 +204,13 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // hsync should be high during back porch
             if (!hSync)
             {
-                errorTxt += "horizontal synchronization error: hsync low during back porch\n";
+                //errorTxt += "horizontal synchronization error: hsync low during back porch\n";
             }
 
             // colors should be off back porch
             if (red || green || blue)
             {
-                errorTxt += "horizontal blanking error: RGB != 0 during back porch\n";
+                //errorTxt += "horizontal blanking error: RGB != 0 during back porch\n";
             }
         }
         else if (((m_th * (1.0 - tolerance)) > (m_hSyncPulse + m_hBackPorch))
@@ -219,7 +219,7 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // hsync should be high in active area
             if (!hSync)
             {
-                errorTxt += "horizontal synchronization error: hsync low in active area\n";
+                //errorTxt += "horizontal synchronization error: hsync low in active area\n";
             }
         }
         else if (((m_th * (1.0 - tolerance)) > (m_hSyncPulse + m_hBackPorch + m_hVisibleArea))
@@ -228,13 +228,13 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
             // hsync should be high during front porch
             if (!hSync)
             {
-                errorTxt += "horizontal synchronization error: hsync low during front porch\n";
+                //errorTxt += "horizontal synchronization error: hsync low during front porch\n";
             }
 
             // colors should be off back porch
             if (red || green || blue)
             {
-                errorTxt += "horizontal blanking error: RGB != 0 during front porch\n";
+                //errorTxt += "horizontal blanking error: RGB != 0 during front porch\n";
             }
         }
     }
@@ -249,7 +249,7 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
         if ((xt >= 0ns) && (yt >= 0ns))
         {
             x = floor(xt / m_pixel);
-            y = floor(yt / m_pixel);
+            y = floor(yt / m_line);
         }
 
         if ((x < m_winWidth) && (y < m_winHeight))
