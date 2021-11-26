@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cassert>
-#include <cmath>
 #include <chrono>
 #include <string>
 
@@ -246,10 +245,10 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
 
         nanosec xt = m_th - m_hSyncPulse - m_hBackPorch;
         nanosec yt = m_tv - m_vSyncPulse - m_vBackPorch;
-        if ((xt >= 0ns) && (yt >= 0ns))
+        if ((xt >= 0ns) && (yt >= 0ns) && (m_pixel > 0ns) && (m_line > 0ns))
         {
-            x = floor(xt / m_pixel);
-            y = floor(yt / m_line);
+            x = static_cast<size_t>(xt / m_pixel);
+            y = static_cast<size_t>(yt / m_line);
         }
 
         if ((x < m_winWidth) && (y < m_winHeight))
