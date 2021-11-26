@@ -35,9 +35,9 @@ int main(int argc, char **argv)
 
     CVgaMonitor monitor;
 
-    assert(
-            monitor.setup(CVgaMonitor::Mode::VGA_640x480_60Hz,
-                    CVgaMonitor::ColorDepth::RGB_3BitPerColor));
+    auto monitorSetupSuccessful = monitor.setup(
+        CVgaMonitor::Mode::VGA_640x480_60Hz, CVgaMonitor::ColorDepth::RGB_3BitPerColor);
+    assert(monitorSetupSuccessful);
 
     // Tick the clock until we are done
     while (!Verilated::gotFinish() && !monitor.hasQuitEvent())

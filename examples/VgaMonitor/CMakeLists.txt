@@ -22,5 +22,5 @@ file(GLOB hdl_sv_files "../../resources/VgaTestbench/*.sv")
 verilate(${PROJECT_NAME}
     SOURCES ${hdl_v_files} ${hdl_sv_files}
     TOP_MODULE VGA_TLM
-    VERILATOR_ARGS -Wall -Wno-DECLFILENAME
+    VERILATOR_ARGS -Wall -Wno-DECLFILENAME -O3 --x-assign fast --x-initial fast --noassert
     )

@@ -269,7 +269,7 @@ bool CVgaMonitor::hasQuitEvent()
     auto shallQuit = false;
 
     SDL_Event e;
-    if (SDL_PollEvent(&e))
+    while (SDL_PollEvent(&e))
     {
         if (e.type == SDL_QUIT)
         {
