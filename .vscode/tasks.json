@@ -1,0 +1,51 @@
+{
+    // see https://code.visualstudio.com/docs/editor/tasks#vscode
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run CMake",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-G", "Ninja Multi-Config",
+                "-DCMAKE_CONFIGURATION_TYPES='Debug;Release;RelWithDebInfo'",
+                "-S", "${workspaceFolder}/examples/VgaMonitor",
+                "-B", "${workspaceFolder}/build/examples/VgaMonitor"
+            ],
+            "group" : "build"
+        },
+        {
+            "label": "Build VgaMonitor Example (Debug)",
+            "type": "shell",
+            "command": "ninja -f build-Debug.ninja",
+            "options" : {
+                "cwd" : "${workspaceFolder}/build/examples/VgaMonitor"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build VgaMonitor Example (Release)",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/build/examples/VgaMonitor"
+            },
+            "command": "ninja -f build-Release.ninja",
+            "problemMatcher": ["$gcc"],
+            "group": "build"
+        },
+        {
+            "label": "Build VgaMonitor Example (RelWithDebInfo)",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/build/examples/VgaMonitor"
+            },
+            "command": "ninja -f build-RelWithDebInfo.ninja",
+            "problemMatcher": ["$gcc"],
+            "group": "build"
+        }
+    ]
+}
