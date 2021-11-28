@@ -1,4 +1,5 @@
 `default_nettype none
+`timescale 1ns/1ns
 
 module VGA_TLM
 (
@@ -71,4 +72,3 @@ module VGA_TLM
     assign o_vgaB2 = w_blue[2];
 
 endmodule
-
