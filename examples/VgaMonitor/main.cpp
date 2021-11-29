@@ -44,6 +44,8 @@ int main(int argc, char **argv)
         std::cerr << "Monitor setup failed" << std::endl;
         return EXIT_FAILURE;
     }
+    monitor.setShowTimingInfo(true);
+    monitor.setTimingTolerance(0.0075);
 
     // set up tracing
     context.traceEverOn(true);

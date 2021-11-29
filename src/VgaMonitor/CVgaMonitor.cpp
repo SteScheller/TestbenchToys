@@ -9,11 +9,6 @@
 
 using namespace std::chrono_literals;
 
-namespace
-{
-    double tolerance { 0.0075 };
-}
-
 bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
 {
     auto ok = true;
@@ -21,8 +16,6 @@ bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
     m_mode = mode;
     m_depth = depth;
 
-    m_th = nanosec { 0 };
-    m_tv = nanosec { 0 };
     switch (mode)
     {
         case Mode::VGA_640x480_60Hz:
@@ -94,15 +87,21 @@ void CVgaMonitor::setupMode_VGA_640x480_60Hz()
 void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8_t blue,
         std::chrono::nanoseconds elapsed)
 {
-    static std::string errorTxt;
+    static TimingInfoBitfield hTimingInfo { 0};
+    static TimingInfoBitfield vTimingInfo { 0};
+    static nanosec th{0};
+    static nanosec tv{0};
+    static bool hSyncLast { false };
+    static bool vSyncLast { false };
 
-    m_th += elapsed;
-    m_tv += elapsed;
+    th += elapsed;
+    tv += elapsed;
+    bool isBlack = (red == 0) && (green == 0) && (blue == 0);
 
     // frame starts on the negative edge of vsync
-    if (m_vSyncLast && !vSync)
+    if (vSyncLast && !vSync)
     {
-        m_tv = 0ns;
+        tv = 0ns;
 
         // display last frame
         SDL_UpdateTexture(m_texture.get(), NULL, m_buffer.data(), m_winWidth * sizeof(Pixel));
@@ -110,141 +109,34 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
         SDL_RenderCopy(m_renderer.get(), m_texture.get(), NULL, NULL);
         SDL_RenderPresent(m_renderer.get());
 
-        if (!errorTxt.empty())
+        if (m_showTimingInfo)
         {
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Debug", errorTxt.c_str(),
-                    m_window.get());
+            // todo
         }
 
-        // delete error text from last frame
-        errorTxt.clear();
+        // reset timing info bitfield
+        hTimingInfo = 0;
+        vTimingInfo = 0;
     }
+    vTimingInfo |= checkSignalTiming(
+        vSync, isBlack, tv, m_vSyncPulse, m_vBackPorch, m_vVisibleArea, m_vFrontPorch, m_tolerance);
 
+
+    // line starts on the negative edge of hsync
+    if (hSyncLast && !hSync)
     {
-        // check vsync signal
-        if ((m_tv * (1.0 + tolerance)) < m_vSyncPulse)
-        {
-            // vsync should be low during blanking
-            if (vSync)
-            {
-                //errorTxt += "vertical synchronization error: vsync high during blanking\n";
-            }
-
-            // colors should be off during blanking
-            if (red || green || blue)
-            {
-                //errorTxt += "vertical blanking error: RGB != 0 during synchronization\n";
-            }
-        }
-        else if ((m_tv * (1.0 + tolerance)) < (m_vSyncPulse + m_vBackPorch))
-        {
-            // vsync should be high during back porch
-            if (!vSync)
-            {
-                //errorTxt += "vertical synchronization error: vsync low during back porch\n";
-            }
-
-            // colors should be off back porch
-            if (red || green || blue)
-            {
-                //errorTxt += "vertical blanking error: RGB != 0 during back porch\n";
-            }
-        }
-        else if (((m_tv * (1.0 - tolerance)) > (m_vSyncPulse + m_vBackPorch))
-                && ((m_tv * (1.0 + tolerance)) < (m_vSyncPulse + m_vBackPorch + m_vVisibleArea)))
-        {
-            // vsync should be high in active area
-            if (!vSync)
-            {
-                //errorTxt += "vertical synchronization error: vsync low in active area\n";
-            }
-        }
-        else if (((m_tv * (1.0 - tolerance)) > (m_vSyncPulse + m_vBackPorch + m_vVisibleArea))
-                && ((m_tv * (1.0 + tolerance)) < (m_frame - m_vFrontPorch)))
-        {
-            // vsync should be high during front porch
-            if (!vSync)
-            {
-                //errorTxt += "vertical synchronization error: vsync low during front porch\n";
-            }
-
-            // colors should be off back porch
-            if (red || green || blue)
-            {
-                //errorTxt += "vertical blanking error: RGB != 0 during front porch\n";
-            }
-        }
+        th = 0ns;
     }
-
-    // line  starts on the negative edge of hsync
-    if (m_hSyncLast && !hSync)
-    {
-        m_th = 0ns;
-    }
-
-    // check hsync signal
-    {
-        if ((m_th * (1.0 + tolerance)) < m_hSyncPulse)
-        {
-            // hsync should be low during blanking
-            if (hSync)
-            {
-                //errorTxt += "horizontal synchronization error: hsync high during blanking\n";
-            }
-
-            // colors should be off during blanking
-            if (red || green || blue)
-            {
-                //errorTxt += "horizontal blanking error: RGB != 0 during synchronization\n";
-            }
-        }
-        else if ((m_th * (1.0 + tolerance)) < (m_hSyncPulse + m_hBackPorch))
-        {
-            // hsync should be high during back porch
-            if (!hSync)
-            {
-                //errorTxt += "horizontal synchronization error: hsync low during back porch\n";
-            }
-
-            // colors should be off back porch
-            if (red || green || blue)
-            {
-                //errorTxt += "horizontal blanking error: RGB != 0 during back porch\n";
-            }
-        }
-        else if (((m_th * (1.0 - tolerance)) > (m_hSyncPulse + m_hBackPorch))
-                && ((m_th * (1.0 + tolerance)) < (m_hSyncPulse + m_hBackPorch + m_hVisibleArea)))
-        {
-            // hsync should be high in active area
-            if (!hSync)
-            {
-                //errorTxt += "horizontal synchronization error: hsync low in active area\n";
-            }
-        }
-        else if (((m_th * (1.0 - tolerance)) > (m_hSyncPulse + m_hBackPorch + m_hVisibleArea))
-                && ((m_th * (1.0 + tolerance)) < (m_frame - m_hFrontPorch)))
-        {
-            // hsync should be high during front porch
-            if (!hSync)
-            {
-                //errorTxt += "horizontal synchronization error: hsync low during front porch\n";
-            }
-
-            // colors should be off back porch
-            if (red || green || blue)
-            {
-                //errorTxt += "horizontal blanking error: RGB != 0 during front porch\n";
-            }
-        }
-    }
+    hTimingInfo |= checkSignalTiming(
+        hSync, isBlack, th, m_hSyncPulse, m_hBackPorch, m_hVisibleArea, m_hFrontPorch, m_tolerance);
 
     // color the current pixel
     {
         size_t x = m_winWidth;
         size_t y = m_winHeight;
 
-        nanosec xt = m_th - m_hSyncPulse - m_hBackPorch;
-        nanosec yt = m_tv - m_vSyncPulse - m_vBackPorch;
+        nanosec xt = th - m_hSyncPulse - m_hBackPorch;
+        nanosec yt = tv - m_vSyncPulse - m_vBackPorch;
         if ((xt >= 0ns) && (yt >= 0ns) && (m_pixel > 0ns) && (m_line > 0ns))
         {
             x = static_cast<size_t>(xt / m_pixel);
@@ -260,8 +152,57 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
         }
     }
 
-    m_hSyncLast = hSync;
-    m_vSyncLast = vSync;
+    hSyncLast = hSync;
+    vSyncLast = vSync;
+}
+
+CVgaMonitor::TimingInfoBitfield CVgaMonitor::checkSignalTiming(
+    bool sync, 
+    bool isBlack, 
+    nanosec t, 
+    nanosec syncPulse,
+    nanosec backPorch,
+    nanosec visibleArea,
+    nanosec frontPorch,
+    double tolerance)
+{
+    TimingInfoBitfield timingInfo { 0 };
+    if ((t * (1.0 + tolerance)) < syncPulse)
+    {
+        // vsync should be low during blanking
+        if (sync) timingInfo |= (1 << static_cast<uint8_t>(TimingInfoBits::SYNC_BLANKING));
+
+        // colors should be off during blanking
+        if (isBlack) timingInfo |= (1 << static_cast<uint8_t>(TimingInfoBits::RGB_BLANKING));
+    }
+    else if ((t * (1.0 + tolerance)) < (syncPulse + backPorch))
+    {
+        // vsync should be high during back porch
+        if (!sync) timingInfo |= (1 << static_cast<uint8_t>(TimingInfoBits::SYNC_BACK_PORCH));
+
+        // colors should be off during back porch
+        if (isBlack)
+            timingInfo |= (1 << static_cast<uint8_t>(TimingInfoBits::RGB_BACK_PORCH));
+    }
+    else if (((t * (1.0 - tolerance)) > (syncPulse + backPorch))
+            && ((t * (1.0 + tolerance)) < (syncPulse + backPorch + visibleArea)))
+    {
+        // vsync should be high in active area
+        if (!sync)
+            timingInfo |= (1 << static_cast<uint8_t>(TimingInfoBits::SYNC_ACTIVE_AREA));
+    }
+    else if (((t * (1.0 - tolerance)) > (syncPulse + backPorch + visibleArea))
+            && ((t * (1.0 + tolerance)) < (syncPulse + backPorch + visibleArea + frontPorch)))
+    {
+        // vsync should be high during front porch
+        if (!sync)
+            timingInfo |= (1 << static_cast<uint8_t>(TimingInfoBits::SYNC_FRONT_PORCH));
+
+        // colors should be off during front porch
+        if (isBlack) timingInfo |= (1 << static_cast<uint8_t>(TimingInfoBits::RGB_FRONT_PORCH));
+    }
+
+    return timingInfo;
 }
 
 bool CVgaMonitor::hasQuitEvent()
@@ -278,4 +219,14 @@ bool CVgaMonitor::hasQuitEvent()
     }
 
     return shallQuit;
+}
+
+void CVgaMonitor::setShowTimingInfo(bool showTimingInfo)
+{
+    m_showTimingInfo = showTimingInfo;
+}
+
+void CVgaMonitor::setTimingTolerance(double tolerance)
+{
+    m_tolerance = tolerance;
 }
