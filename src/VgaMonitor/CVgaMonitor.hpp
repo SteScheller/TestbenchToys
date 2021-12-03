@@ -24,6 +24,8 @@ class CVgaMonitor
 
         // methods
         CVgaMonitor() = default;
+        ~CVgaMonitor();
+
         bool setup(Mode mode, ColorDepth depth);
         bool setup()
         {
@@ -72,6 +74,7 @@ class CVgaMonitor
         static TimingInfoBitfield checkSignalTiming(
             bool sync, bool isBlack, nanosec t, nanosec syncPulse, nanosec backPorch,
             nanosec visibleArea, nanosec frontPorch, double tolerance);
+        void showTimingInfo(TimingInfoBitfield hTimingInfo, TimingInfoBitfield vTimingInfo);
 
         // members
         Mode m_mode { Mode::VGA_640x480_60Hz };

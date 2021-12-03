@@ -4,15 +4,29 @@
 #include <string>
 
 #include "CVgaMonitor.hpp"
-
-#include <SDL.h>
+#include "imgui/imgui_impl_sdl.h"
+#include "imgui/imgui_impl_sdlrenderer.h"
 
 using namespace std::chrono_literals;
+
+CVgaMonitor::~CVgaMonitor()
+{
+    ImGui_ImplSDLRenderer_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
+    m_texture.release();
+    m_renderer.release();
+    m_window.release();
+
+    SDL_Quit();
+}
 
 bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
 {
     auto ok = true;
 
+    // Setup simulated monitor buffer and timings
     m_mode = mode;
     m_depth = depth;
 
@@ -28,6 +42,14 @@ bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
     }
     m_numPixels = m_winWidth * m_winHeight;
     m_buffer.resize(m_numPixels, { 0, 0, 0, 0 });
+
+
+    // Setup SDL
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+    {
+        std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+        ok = false;
+    }
 
     m_window = windowPtr { SDL_CreateWindow("Simulated VGA Monitor", SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED, m_winWidth, m_winHeight, SDL_WINDOW_SHOWN), SDL_DestroyWindow };
@@ -63,6 +85,21 @@ bool CVgaMonitor::setup(Mode mode, ColorDepth depth)
         std::cerr << "vga monitor texture creation failed: %s\n" << SDL_GetError();
         ok = false;
     }
+
+    // Setup ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplSDL2_InitForSDLRenderer(m_window.get());
+    ImGui_ImplSDLRenderer_Init(m_renderer.get());
 
     return ok;
 }
@@ -103,16 +140,18 @@ void CVgaMonitor::eval(bool hSync, bool vSync, uint8_t red, uint8_t green, uint8
     {
         tv = 0ns;
 
-        // display last frame
+        // update timing information window
+        if (m_showTimingInfo)
+        {
+            showTimingInfo(hTimingInfo, vTimingInfo);
+        }
+
+        // update the displayed texture with the last frame
         SDL_UpdateTexture(m_texture.get(), NULL, m_buffer.data(), m_winWidth * sizeof(Pixel));
         SDL_RenderClear(m_renderer.get());
         SDL_RenderCopy(m_renderer.get(), m_texture.get(), NULL, NULL);
+        ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(m_renderer.get());
-
-        if (m_showTimingInfo)
-        {
-            // todo
-        }
 
         // reset timing info bitfield
         hTimingInfo = 0;
@@ -212,6 +251,7 @@ bool CVgaMonitor::hasQuitEvent()
     SDL_Event e;
     while (SDL_PollEvent(&e))
     {
+        ImGui_ImplSDL2_ProcessEvent(&e);
         if (e.type == SDL_QUIT)
         {
             shallQuit = true;
@@ -224,9 +264,19 @@ bool CVgaMonitor::hasQuitEvent()
 void CVgaMonitor::setShowTimingInfo(bool showTimingInfo)
 {
     m_showTimingInfo = showTimingInfo;
-}
-
-void CVgaMonitor::setTimingTolerance(double tolerance)
+} void CVgaMonitor::setTimingTolerance(double tolerance)
 {
     m_tolerance = tolerance;
+}
+
+void CVgaMonitor::showTimingInfo(TimingInfoBitfield hTimingInfo, TimingInfoBitfield vTimingInfo)
+{
+    // TODO: use some nice imgui widgets to show the signal timing information
+    ImGui_ImplSDLRenderer_NewFrame();
+    ImGui_ImplSDL2_NewFrame(m_window.get());
+    ImGui::NewFrame();
+
+    ImGui::ShowDemoWindow();
+
+    ImGui::Render();
 }
